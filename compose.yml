@@ -1,24 +1,56 @@
 name: ${DOCKER_NAME}
 services:
   nginx:
-    image: "nginx:1.21.3"
-    ports:
-      - "${HTTP_BIND}:${HTTP_PORT}:80"
-    volumes:
-      - ./.huly.nginx:/etc/nginx/conf.d/default.conf
-    restart: unless-stopped
-
-  cockroach:
-    image: cockroachdb/cockroach:latest-v24.2
-    command: start-single-node --accept-sql-without-tls
-    environment:
-      - COCKROACH_DATABASE=${CR_DATABASE}
-      - COCKROACH_USER=${CR_USERNAME}
-      - COCKROACH_PASSWORD=${CR_USER_PASSWORD}
-    volumes:
-      - ${VOLUME_CR_DATA_PATH:-cr_data}:/cockroach/cockroach-data
-      - ${VOLUME_CR_CERTS_PATH:-cr_certs}:/cockroach/certs
-    restart: unless-stopped
+  build:
+    context: .
+    dockerfile_inline: |
+      FROM nginx:1.21.3-alpine
+      RUN echo 'server { \
+          listen 80; \
+          client_max_body_size 100M; \
+          location / { \
+              proxy_pass http://front:8080; \
+              proxy_set_header Host $$host; \
+              proxy_set_header X-Real-IP $$remote_addr; \
+              proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for; \
+              proxy_set_header X-Forwarded-Proto $$scheme; \
+          } \
+          location /_transactor { \
+              proxy_pass http://transactor:3333; \
+              proxy_http_version 1.1; \
+              proxy_set_header Upgrade $$http_upgrade; \
+              proxy_set_header Connection "Upgrade"; \
+              proxy_set_header Host $$host; \
+          } \
+          location /_collaborator { \
+              proxy_pass http://collaborator:3078; \
+              proxy_http_version 1.1; \
+              proxy_set_header Upgrade $$http_upgrade; \
+              proxy_set_header Connection "Upgrade"; \
+              proxy_set_header Host $$host; \
+          } \
+          location /_accounts { \
+              proxy_pass http://account:3000; \
+              proxy_set_header Host $$host; \
+          } \
+          location /_stats { \
+              proxy_pass http://stats:4900; \
+              proxy_set_header Host $$host; \
+          } \
+          location /_rekoni { \
+              proxy_pass http://rekoni:4004; \
+              proxy_set_header Host $$host; \
+          } \
+          location /files/ { \
+              proxy_pass http://minio:9000/; \
+              proxy_set_header Host $$host; \
+          } \
+      }' > /etc/nginx/conf.d/default.conf
+  ports:
+    - "${HTTP_BIND}:${HTTP_PORT}:80"
+  restart: unless-stopped
+  networks:
+    - huly_net
 
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v24.3.6
