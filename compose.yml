@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile.nginx
     ports:
       - "${HTTP_BIND}:${HTTP_PORT}:80"
+    depends_on:
+      - front
     restart: unless-stopped
     networks:
       - huly_net
