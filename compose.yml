@@ -17,6 +17,11 @@ services:
       - COCKROACH_DATABASE=${CR_DATABASE}
       - COCKROACH_USER=${CR_USERNAME}
       - COCKROACH_PASSWORD=${CR_USER_PASSWORD}
+    healthcheck:
+      test: ["CMD", "/cockroach/cockroach", "node", "status", "--insecure"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - cr_data:/cockroach/cockroach-data
       - cr_certs:/cockroach/certs
@@ -141,6 +146,11 @@ services:
       - ACCOUNTS_URL=http${SECURE:+s}://${HOST_ADDRESS}/_accounts
       - ACCOUNT_PORT=3000
       - QUEUE_CONFIG=redpanda:9092
+    depends_on:
+      cockroach:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - huly_net
@@ -216,7 +226,7 @@ services:
     image: hardcoreeng/hulykvs:${HULY_VERSION}
     depends_on:
       cockroach:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8094:8094"
     environment:
