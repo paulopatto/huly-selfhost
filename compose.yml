@@ -80,7 +80,7 @@ services:
       - ELASTICSEARCH_PORT_NUMBER=9200
       - BITNAMI_DEBUG=true
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - http.cors.enabled=true
       - http.cors.allow-origin=http://localhost:8082
     healthcheck:
@@ -151,6 +151,10 @@ services:
         condition: service_healthy
       redpanda:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
     restart: unless-stopped
     networks:
       - huly_net
