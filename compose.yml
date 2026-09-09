@@ -1,5 +1,4 @@
 name: ${DOCKER_NAME}
-
 services:
   nginx:
     build:
