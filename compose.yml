@@ -173,6 +173,11 @@ services:
 
   front:
     image: hardcoreeng/front:${HULY_VERSION}
+    depends_on:
+      elastic:
+        condition: service_healthy
+      account:
+        condition: service_started
     environment:
       - SERVER_PORT=8080
       - SERVER_SECRET=${SECRET}
@@ -209,6 +214,13 @@ services:
       - ACCOUNTS_URL=http://account:3000
       - STATS_URL=http://stats:4900
       - QUEUE_CONFIG=redpanda:9092
+    depends_on:
+      elastic:
+        condition: service_healthy
+      cockroach:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - huly_net
