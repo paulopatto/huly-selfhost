@@ -12,7 +12,7 @@ services:
 
   cockroach:
     image: cockroachdb/cockroach:latest-v24.2
-    command: start-single-node --accept-sql-without-tls --insecure --listen-addr=127.0.0.1
+    command: start-single-node --accept-sql-without-tls --insecure --listen-addr=127.0.0.1:26257
     environment:
       - COCKROACH_DATABASE=${CR_DATABASE}
       - COCKROACH_USER=${CR_USERNAME}
